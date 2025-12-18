@@ -36,6 +36,19 @@ def create_app() -> FastAPI:
             correlation_id=getattr(request.state, "correlation_id", None),
         )
         return JSONResponse(status_code=404, content=err.model_dump())
+    
+    from fastapi.exceptions import RequestValidationError
+
+    @app.exception_handler(RequestValidationError)
+    async def request_validation_handler(request: Request, exc: RequestValidationError):
+        err = ErrorResponse(
+            error_code="VALIDATION_ERROR",
+            message="Invalid request",
+            details=exc.errors(),
+            correlation_id=getattr(request.state, "correlation_id", None),
+        )
+        return JSONResponse(status_code=422, content=err.model_dump())
+
 
     @app.get("/health")
     async def health(request: Request):

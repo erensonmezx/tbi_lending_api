@@ -35,3 +35,14 @@ def test_get_missing_returns_404_error_shape():
     body = r.json()
     assert body["error_code"] == "NOT_FOUND"
     assert "correlation_id" in body
+
+def test_validation_error_uses_error_shape_and_preserves_correlation_id():
+    client = TestClient(create_app())
+    bad = {"customer_id": "", "merchant_id": "m1", "amount": -1, "currency": "e", "term_months": 0}
+    r = client.post("/applications", json=bad, headers={"x-correlation-id": "cid-bad-1"})
+    assert r.status_code == 422
+    body = r.json()
+    assert body["error_code"] == "VALIDATION_ERROR"
+    assert body["correlation_id"] == "cid-bad-1"
+    assert "details" in body
+    assert r.headers["x-correlation-id"] == "cid-bad-1"
